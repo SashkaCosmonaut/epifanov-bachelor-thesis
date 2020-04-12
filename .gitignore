@@ -61,3 +61,5 @@ crashlytics-build.properties
 Assets/SteamVR/
 Assets/SteamVR_Resources/
 Assets/AutoSave/
+Assets/SteamVR_Input/
+Assets/StreamingAssets/SteamVR/
