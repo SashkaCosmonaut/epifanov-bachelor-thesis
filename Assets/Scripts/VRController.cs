@@ -32,7 +32,7 @@ namespace Assets.Scripts
         /// <summary>
         /// Скорость передвижения игрока.
         /// </summary>
-        private const float Speed = 0.0f;
+        private float speed = 0.0f;
 
         /// <summary>
         /// Объект управления игроком.
@@ -72,8 +72,8 @@ namespace Assets.Scripts
         void Update()
         {
             HandleHead();
-            CalculateMovement();
             HandleHeight();
+            CalculateMovement();
         }
 
         /// <summary>
@@ -93,14 +93,60 @@ namespace Assets.Scripts
             cameraRig.rotation = oldRotation;
         }
 
+        /// <summary>
+        /// Приведение объекта игрока в движение.
+        /// </summary>
         private void CalculateMovement()
         {
+            // Определяем направление движения, поскольку объект игрока вращается вместе с камерой
+            var orientationEuler = new Vector3(0, transform.eulerAngles.y, 0);
+            var orientation = Quaternion.Euler(orientationEuler);
+            var movement = Vector3.zero;
 
+            // Если не двигаемся, обнуляем скорость (можно замедлять, чтобы убрать инерцию)
+            // Если наше событие перешло из состояния true в состояние false
+            if (MovePress.GetStateUp(SteamVR_Input_Sources.Any))
+                speed = 0;
+
+            // Если тачпад нажат, событие перешло в состояние true
+            if (MovePress.state)
+            {
+                // Увеличиваем скорость игрока, проверяя, что она не выходит за границы
+                speed += MoveValue.axis.y * Sensitivity;
+                speed = Mathf.Clamp(speed, -MaxSpeed, MaxSpeed);
+
+                // Указываем направление движения с заданной скоростью
+                // Идём в ту сторону, в которую смотрим, а скорость растёт постепенно
+                movement += orientation * (speed * Vector3.forward) * Time.deltaTime;
+            }
+
+            // Увеличить скорость передвижения
+            characterController.Move(movement);
         }
 
+        /// <summary>
+        /// Изменить высоту объекта игрока в соответствии с высотой расположения шлема.
+        /// </summary>
         private void HandleHeight()
         {
+            // Задать положение головы в локальном пространстве по высоте от 1 до 2 метров
+            var headHeight = Mathf.Clamp(head.position.y, 1, 2);
+            characterController.height = headHeight;
 
+            // Задать значение центра объекта игрока, чтобы ось повторота игрока была в центре
+            var newCenter = Vector3.zero;
+            newCenter.y = characterController.height / 2;
+            newCenter.y += characterController.skinWidth; // Если не добавить, будет небольшая тряска
+
+            // Движение капсулы в локальном пространстве
+            newCenter.x = head.localPosition.x;
+            newCenter.z = head.localPosition.z;
+
+            // Поворот капсулы объекта игрока
+            newCenter = Quaternion.Euler(0, -transform.eulerAngles.y, 0) * newCenter;
+
+            // Применить
+            characterController.center = newCenter;
         }
     }
 }

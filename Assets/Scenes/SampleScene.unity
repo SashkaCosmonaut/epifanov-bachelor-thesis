@@ -181,7 +181,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!21 &511211040
+--- !u!21 &250655613
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
@@ -215,7 +215,7 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!43 &607478234
+--- !u!43 &1437500759
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -532,12 +532,11 @@ MonoBehaviour:
   Sensitivity: 0.1
   MaxSpeed: 1
   MovePress:
-    actionPath: 
+    actionPath: /actions/default/in/Teleport
     needsReinit: 0
   MoveValue:
-    actionPath: 
+    actionPath: /actions/default/in/TouchpadPosition
     needsReinit: 0
-  Test: []
 --- !u!1 &1895094176
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,7 +731,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2096697011}
-  m_Mesh: {fileID: 607478234}
+  m_Mesh: {fileID: 1437500759}
 --- !u!23 &2094588949
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -750,7 +749,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 511211040}
+  - {fileID: 250655613}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
