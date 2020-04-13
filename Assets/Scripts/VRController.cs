@@ -5,10 +5,15 @@ namespace Assets.Scripts
 {
     /// <summary>
     /// Класс для управления передвижением игрока с помощью тачпада.
-    /// youtube.com/watch?v=QREKO1sf8b8
+    /// https://youtube.com/watch?v=QREKO1sf8b8
     /// </summary>
     public class VRController : MonoBehaviour
     {
+        /// <summary>
+        /// Сила гравитации для игрока.
+        /// </summary>
+        public float Gravity = 30.0f;
+
         /// <summary>
         /// Насколько значение силы нажатия на тачпад будет увеличивать скорость игрока [-1..1].
         /// </summary>
@@ -20,12 +25,7 @@ namespace Assets.Scripts
         public float MaxSpeed = 1.0f;
 
         /// <summary>
-        /// Событие нажатия на тачпад (кнопку движения).
-        /// </summary>
-        public SteamVR_Action_Boolean MovePress = null;
-
-        /// <summary>
-        /// Направление движения игрока, задаваемое тачпадом.
+        /// Направление движения игрока, задаваемое касанием тачпада.
         /// </summary>
         public SteamVR_Action_Vector2 MoveValue = null;
 
@@ -94,37 +94,6 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Приведение объекта игрока в движение.
-        /// </summary>
-        private void CalculateMovement()
-        {
-            // Определяем направление движения, поскольку объект игрока вращается вместе с камерой
-            var orientationEuler = new Vector3(0, transform.eulerAngles.y, 0);
-            var orientation = Quaternion.Euler(orientationEuler);
-            var movement = Vector3.zero;
-
-            // Если не двигаемся, обнуляем скорость (можно замедлять, чтобы убрать инерцию)
-            // Если наше событие перешло из состояния true в состояние false
-            if (MovePress.GetStateUp(SteamVR_Input_Sources.Any))
-                speed = 0;
-
-            // Если тачпад нажат, событие перешло в состояние true
-            if (MovePress.state)
-            {
-                // Увеличиваем скорость игрока, проверяя, что она не выходит за границы
-                speed += MoveValue.axis.y * Sensitivity;
-                speed = Mathf.Clamp(speed, -MaxSpeed, MaxSpeed);
-
-                // Указываем направление движения с заданной скоростью
-                // Идём в ту сторону, в которую смотрим, а скорость растёт постепенно
-                movement += orientation * (speed * Vector3.forward) * Time.deltaTime;
-            }
-
-            // Увеличить скорость передвижения
-            characterController.Move(movement);
-        }
-
-        /// <summary>
         /// Изменить высоту объекта игрока в соответствии с высотой расположения шлема.
         /// </summary>
         private void HandleHeight()
@@ -147,6 +116,52 @@ namespace Assets.Scripts
 
             // Применить
             characterController.center = newCenter;
+        }
+
+        /// <summary>
+        /// Приведение объекта игрока в движение.
+        /// </summary>
+        private void CalculateMovement()
+        {
+            // Определяем направление движения
+            var orientation = CalculateOrientation();
+            var moveDirection = Vector3.zero;
+
+            // Если не двигаемся, обнуляем скорость (можно замедлять, чтобы убрать инерцию)
+            // Если касание тачпада во все стороны нулевая
+            if (MoveValue.axis.magnitude == 0)
+                speed = 0;
+
+            // Увеличиваем скорость игрока по направлению касания тачпада
+            speed += MoveValue.axis.magnitude * Sensitivity;
+            speed = Mathf.Clamp(speed, -MaxSpeed, MaxSpeed);    // Проверяем, что скорость не выходит за границы
+
+            // Указываем направление движения с заданной скоростью
+            // Идём в ту сторону, в которую смотрим
+            moveDirection += orientation * (speed * Vector3.forward);
+
+            // Применение гравитации, пояснения см. по ссылке
+            // https://docs.unity3d.com/ScriptReference/CharacterController.Move.html
+            moveDirection.y -= Gravity * Time.deltaTime;
+
+            // Увеличить скорость передвижения
+            characterController.Move(moveDirection * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Определить направление движения игрока по месту нажатия на тачпад.
+        /// </summary>
+        /// <returns>Направление движения игрока.</returns>
+        private Quaternion CalculateOrientation()
+        {
+            // Значение в радианах направления касания тачпада или джойстика
+            var rotation = Mathf.Atan2(MoveValue.axis.x, MoveValue.axis.y);
+            rotation *= Mathf.Rad2Deg;  // Конвертируем в градусы
+
+            // Поскольку объект игрока вращается вместе с камерой, поворачиваем сам объект
+            var orientationEuler = new Vector3(0, transform.eulerAngles.y + rotation, 0);
+
+            return Quaternion.Euler(orientationEuler);
         }
     }
 }
