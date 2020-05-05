@@ -18,11 +18,6 @@ namespace Assets.Scripts
         public GameObject Dot;
 
         /// <summary>
-        /// Модель геймпада, из которой будет исходить луч.
-        /// </summary>
-        public GameObject GamepadModel;
-
-        /// <summary>
         /// Модуль ввода для обработки событий взаимодействия с окружением.
         /// </summary>
         public VRInputModule InputModule;
@@ -53,18 +48,17 @@ namespace Assets.Scripts
         /// </summary>
         private void UpdateLine()
         {
-            // Позиция объекта - источника линии указателя
-            var data = InputModule.GetEventData();
-            var lineSource = transform;
+            // Получаем данные из обработчика событий
+            var eventData = InputModule.GetEventData();
 
             // Задать длину указателя по умолчанию или по расстоянию до объекта
-            var targetLength = data.pointerCurrentRaycast.distance == 0 ? DefaultLength : data.pointerCurrentRaycast.distance;
+            var targetLength = eventData.pointerCurrentRaycast.distance == 0 ? DefaultLength : eventData.pointerCurrentRaycast.distance;
 
             // Отлавливаем попадание лазера на объект
-            var hit = CreateRaycast(lineSource, targetLength);
+            var hit = CreateRaycast(targetLength);
 
             // Координата конца лазера по умолчанию
-            var endPosition = lineSource.position + lineSource.forward * targetLength;
+            var endPosition = transform.position + transform.forward * targetLength;
 
             if (hit.collider != null)       // Координата конца лазера на объекте, если он есть
                 endPosition = hit.point;
@@ -73,19 +67,18 @@ namespace Assets.Scripts
             Dot.transform.position = endPosition;
 
             // Отрисовываем линию лазера
-            LineRenderer.SetPosition(0, lineSource.position);
+            LineRenderer.SetPosition(0, transform.position);
             LineRenderer.SetPosition(1, endPosition);
         }
 
         /// <summary>
         /// Определить попадание луча в объект.
         /// </summary>
-        /// <param name="source">Источник луча.</param>
         /// <param name="length">Длина луча лазера.</param>
         /// <returns>Информация о попадании линии указателя в какой-либо объект.</returns>
-        private RaycastHit CreateRaycast(Transform source, float length)
+        private RaycastHit CreateRaycast(float length)
         {
-            var ray = new Ray(source.position, source.forward);
+            var ray = new Ray(transform.position, transform.forward);
 
             Physics.Raycast(ray, out RaycastHit hit, length);
 

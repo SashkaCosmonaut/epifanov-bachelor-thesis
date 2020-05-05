@@ -15,76 +15,113 @@ namespace Assets.Scripts
         /// </summary>
         public Camera Camera;
 
+        /// <summary>
+        /// Источник событий - геймпад.
+        /// </summary>
         public SteamVR_Input_Sources TargetSource;
 
+        /// <summary>
+        /// Действие на геймпаде, которое будем отслеживать.
+        /// </summary>
         public SteamVR_Action_Boolean ClickAction;
 
-        private GameObject CurrentObject = null;
+        /// <summary>
+        /// Текущий объект, на который направлен луч.
+        /// </summary>
+        private GameObject currentObject = null;
 
-        private PointerEventData Data = null;
+        /// <summary>
+        /// Объект данных, передаваемый вместе с событием.
+        /// </summary>
+        private PointerEventData eventData = null;
 
+        /// <summary>
+        /// Инициализация используемых данных.
+        /// Переобределяем Awake класса BaseInputModule.
+        /// </summary>
         protected override void Awake()
         {
             base.Awake();
 
-            Data = new PointerEventData(eventSystem);
+            eventData = new PointerEventData(eventSystem);
         }
 
+        /// <summary>
+        /// Получить объект данных события.
+        /// </summary>
+        /// <returns>Объект данных события.</returns>
         public PointerEventData GetEventData()
         {
-            return Data;
+            return eventData;
         }
 
+        /// <summary>
+        /// Обработка события. Этот метод ведёт себя как Update.
+        /// </summary>
         public override void Process()
         {
-            // Reset data
-            Data.Reset();
-            Data.position = new Vector2(Camera.pixelWidth / 2, Camera.pixelHeight / 2);
+            // Обновляем данные события
+            eventData.Reset();
 
-            // Raycast
-            eventSystem.RaycastAll(Data, m_RaycastResultCache);
-            Data.pointerCurrentRaycast = FindFirstRaycast(m_RaycastResultCache);
-            CurrentObject = Data.pointerCurrentRaycast.gameObject;
+            // Позиция луча - в середине того, что видит камера
+            eventData.position = new Vector2(Camera.pixelWidth / 2, Camera.pixelHeight / 2);
 
-            // Clear raycast
+            // Определяем объект, на который наведён луч
+            eventSystem.RaycastAll(eventData, m_RaycastResultCache);
+            eventData.pointerCurrentRaycast = FindFirstRaycast(m_RaycastResultCache);
+            currentObject = eventData.pointerCurrentRaycast.gameObject;
+
+            // Очищаем кеш Raycast
             m_RaycastResultCache.Clear();
 
-            // Hover
-            HandlePointerExitAndEnter(Data, CurrentObject);
+            // Обработка события наведения луча
+            HandlePointerExitAndEnter(eventData, currentObject);
 
-            // Press
+            // Обработка события нажатия кнопки
             if (ClickAction.GetStateDown(TargetSource))
-                ProcessPress(Data);
+                ProcessPress(eventData);
 
-            // Release
+            // Обработка события отпускания кнопки
             if (ClickAction.GetStateUp(TargetSource))
-                ProcessRelease(Data);
+                ProcessRelease(eventData);
         }
 
-
+        /// <summary>
+        /// Обработка события нажатия на отслеживаемую кнопку на геймпаде.
+        /// </summary>
+        /// <param name="data">Объект данных события.</param>
         private void ProcessPress(PointerEventData data)
         {
-            Data.pointerPressRaycast = Data.pointerCurrentRaycast;
+            // Задаём данные 
+            data.pointerPressRaycast = data.pointerCurrentRaycast;
 
-            var newPointerPress = ExecuteEvents.ExecuteHierarchy(CurrentObject, data, ExecuteEvents.pointerDownHandler);
+            // Вызываем событие нажатия кнопки
+            var newPointerPress = ExecuteEvents.ExecuteHierarchy(currentObject, data, ExecuteEvents.pointerDownHandler);
 
+            // Нажатие на кнопку - не всегда полный клик
             if (newPointerPress == null)
-                newPointerPress = ExecuteEvents.GetEventHandler<IPointerClickHandler>(CurrentObject);
+                newPointerPress = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentObject);
 
             data.pressPosition = data.position;
             data.pointerPress = newPointerPress;
-            data.rawPointerPress = CurrentObject;
+            data.rawPointerPress = currentObject;
         }
 
+        /// <summary>
+        /// Обработка события отпускания отслеживаемой кнопки на геймпаде.
+        /// </summary>
+        /// <param name="data">Объект данных события.</param>
         private void ProcessRelease(PointerEventData data)
         {
+            // Вызываем событие поднимания кнопки
             ExecuteEvents.Execute(data.pointerPress, data, ExecuteEvents.pointerUpHandler);
 
-            var pointerUpHandler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(CurrentObject);
+            var pointerUpHandler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentObject);
 
-            if (Data.pointerPress == pointerUpHandler)
-                ExecuteEvents.Execute(Data.pointerPress, Data, ExecuteEvents.pointerClickHandler);
+            if (data.pointerPress == pointerUpHandler)
+                ExecuteEvents.Execute(data.pointerPress, data, ExecuteEvents.pointerClickHandler);
 
+            // Очищаем данные
             eventSystem.SetSelectedGameObject(null);
 
             data.pressPosition = Vector2.zero;
