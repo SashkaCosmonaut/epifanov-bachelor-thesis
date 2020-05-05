@@ -54,10 +54,11 @@ namespace Assets.Scripts
         private void UpdateLine()
         {
             // Позиция объекта - источника линии указателя
-            var lineSource = GamepadModel.transform;
+            var data = InputModule.GetEventData();
+            var lineSource = transform;
 
             // Задать длину указателя по умолчанию или по расстоянию до объекта
-            var targetLength = DefaultLength;
+            var targetLength = data.pointerCurrentRaycast.distance == 0 ? DefaultLength : data.pointerCurrentRaycast.distance;
 
             // Отлавливаем попадание лазера на объект
             var hit = CreateRaycast(lineSource, targetLength);
